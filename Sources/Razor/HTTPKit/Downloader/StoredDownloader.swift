@@ -15,7 +15,7 @@ extension StoredDownloader {
         return DownloadRequest.suggestedDownloadDestination(for: .documentDirectory)
     }
     
-    public func download(request: Request, in queue: DispatchQueue, when: ((Progress) -> ())?, done: @escaping (Result<URL, Error>) ->()) {
+    public func download(request: Request, in queue: DispatchQueue, when: ((Progress) -> ())?, done: @escaping (Result<URL, HTTPError>) ->()) {
         defaultDownload(request: request, in: queue, when: when, done: done)
     }
     
@@ -23,25 +23,28 @@ extension StoredDownloader {
     func defaultDownload(request: Request,
                          in queue: DispatchQueue,
                          when: ((Progress) -> ())?,
-                         done: @escaping (Result<URL, Error>) ->()) -> DownloadRequest {
+                         done: @escaping (Result<URL, HTTPError>) ->()) -> DownloadRequest {
         let target: String
         if path.hasPrefix("https://") || path.hasPrefix("http://") {
             target = path
         } else {
             target = HTTPKit.serverAddress + path
         }
-        return AF.download(target,
-                    method: method,
-                    parameters: request.parameters,
-                    encoder: request.encoder,
-                    headers: headers,
-                    to: destination)
+        return HTTPKit.session.download(target,
+                                        method: method,
+                                        parameters: request.parameters,
+                                        encoder: request.encoder,
+                                        headers: headers,
+                                        to: destination)
             .downloadProgress(queue: queue) { progress in when?(progress) }
             .response(queue: queue) { response in
                 guard case let Result.success(url) = response.result,
                     let fileURL = url else {
-                        // TODO: 转换Error类型
-                        fatalError()
+                        guard let error = response.error else {
+                            return
+                        }
+                        done(.failure(error))
+                        return
                 }
                 done(.success(fileURL))
         }
@@ -51,7 +54,7 @@ extension StoredDownloader {
 extension StoredDownloader where Request.Payload == Empty {
     public func download(in queue: DispatchQueue = .main,
                          when: ((Progress) -> ())? = nil,
-                         done: @escaping (Result<URL, Error>) ->()) {
+                         done: @escaping (Result<URL, HTTPError>) ->()) {
         self.download(request: Request.empty, in: queue, when: when, done: done)
     }
 }

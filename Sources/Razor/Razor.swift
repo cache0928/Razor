@@ -5,9 +5,9 @@ public struct RazorWrapper<Base> {
     }
 }
 
-public protocol RazorCompatible: AnyObject { }
+public protocol RazorCompatible: AnyObject {}
 
-public protocol RazorCompatibleValue { }
+public protocol RazorCompatibleValue {}
 
 extension RazorCompatible {
     public var rz: RazorWrapper<Self> {

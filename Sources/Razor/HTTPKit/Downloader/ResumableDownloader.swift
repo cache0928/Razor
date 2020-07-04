@@ -11,7 +11,7 @@ import Foundation
 
 public protocol ResumableDownloader: StoredDownloader {
     func cancel()
-    func resume()
+    func resume() -> Bool
 }
 
 fileprivate var taskKey: Void?
@@ -29,15 +29,15 @@ extension ResumableDownloader {
         set { setRetainedAssociatedObject(self, &progressKey, newValue) }
     }
     
-    fileprivate var complete: ((Result<URL, Error>) ->())? {
+    fileprivate var complete: ((Result<URL, HTTPError>) ->())? {
         get { return getAssociatedObject(self, &completeKey) }
         set { setRetainedAssociatedObject(self, &completeKey, newValue) }
     }
-
+    
     public mutating func download(request: Request,
-                         in queue: DispatchQueue = .main,
-                         when: ((Progress) -> ())? = nil,
-                         done: @escaping (Result<URL, Error>) ->()) {
+                                  in queue: DispatchQueue = .main,
+                                  when: ((Progress) -> ())? = nil,
+                                  done: @escaping (Result<URL, HTTPError>) ->()) {
         progress = when
         complete = done
         task = defaultDownload(request: request, in: queue, when: when, done: done)
@@ -50,22 +50,26 @@ extension ResumableDownloader {
         task.cancel(producingResumeData: true)
     }
     
-    public mutating func resume(in queue: DispatchQueue = .main) {
+    public mutating func resume(in queue: DispatchQueue = .main) -> Bool {
         guard let resumeData = task?.resumeData else {
-            return
+            return false
         }
         let when = self.progress
         let done = self.complete
-        task = AF.download(resumingWith: resumeData, to: destination)
+        task = HTTPKit.session.download(resumingWith: resumeData, to: destination)
             .downloadProgress(queue: queue) { progress in when?(progress) }
             .response(queue: queue) { response in
                 guard case let Result.success(url) = response.result,
                     let fileURL = url else {
-                        // TODO: 转换Error类型
-                        fatalError()
+                        guard let error = response.error else {
+                            return
+                        }
+                        done?(.failure(error))
+                        return
                 }
                 done?(.success(fileURL))
         }
+        return true
     }
 }
 

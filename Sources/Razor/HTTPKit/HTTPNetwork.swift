@@ -17,5 +17,11 @@ public protocol HTTPNetwork {
     var path: String { get }
 }
 
-
+public struct Empty: Codable {
+    private init() {}
+    static let empty = Empty()
+    
+    public init(from decoder: Decoder) throws {}
+    public func encode(to encoder: Encoder) throws {}
+}
 

@@ -12,7 +12,7 @@ public protocol HTTPUpLoader: HTTPNetwork {
     associatedtype Request = EmptyRequest
     associatedtype Response: HTTPResponse
     var decoder: DataDecoder { get }
-    func upload(in queue: DispatchQueue, when: ((Progress) -> ())?, done: @escaping (Result<Response.Payload, Error>) -> ())
+    func upload(in queue: DispatchQueue, when: ((Progress) -> ())?, done: @escaping (Result<Response.Payload, HTTPError>) -> ())
 }
 
 extension HTTPUpLoader {

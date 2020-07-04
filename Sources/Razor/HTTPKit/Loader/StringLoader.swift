@@ -10,7 +10,7 @@ import Foundation
 
 extension String: HTTPResponse {
     public typealias Payload = Self
-    public var result: Result<String, Error> {
+    public var result: Result<String, AFError> {
         return .success(self)
     }
 }
@@ -27,14 +27,14 @@ extension StringLoader {
 }
 
 extension StringLoader {
-    public func load(request: Request, in queue: DispatchQueue = .main, callback: @escaping (Result<String, Error>) -> ()) {
+    public func load(request: Request, in queue: DispatchQueue = .main, callback: @escaping (Result<String, HTTPError>) -> ()) {
         let target: String
         if path.hasPrefix("https://") || path.hasPrefix("http://") {
             target = path
         } else {
             target = HTTPKit.serverAddress + path
         }
-        AF.request(target,
+        HTTPKit.session.request(target,
                    method: method,
                    parameters: request.parameters,
                    encoder: request.encoder,
@@ -44,7 +44,6 @@ extension StringLoader {
                 case .success(let str):
                     callback(.success(str))
                 case .failure(let error):
-                    // TODO: 转换Error类型
                     callback(.failure(error))
                 }
         }
@@ -52,7 +51,7 @@ extension StringLoader {
 }
 
 extension StringLoader where Request.Payload == Empty {
-    public func load(in queue: DispatchQueue = .main, callback: @escaping (Result<String, Error>) -> ()) {
+    public func load(in queue: DispatchQueue = .main, callback: @escaping (Result<String, HTTPError>) -> ()) {
         self.load(request: Request.empty, in: queue, callback: callback)
     }
 }

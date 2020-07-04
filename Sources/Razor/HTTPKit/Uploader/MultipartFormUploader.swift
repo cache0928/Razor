@@ -35,14 +35,14 @@ extension MultipartFormUploader {
         }
     }
     
-    public func upload(in queue: DispatchQueue = .main, when: ((Progress) -> ())? = nil, done: @escaping (Result<Response.Payload, Error>) -> ()) {
+    public func upload(in queue: DispatchQueue = .main, when: ((Progress) -> ())? = nil, done: @escaping (Result<Response.Payload, HTTPError>) -> ()) {
         let target: String
         if path.hasPrefix("https://") || path.hasPrefix("http://") {
             target = path
         } else {
             target = HTTPKit.serverAddress + path
         }
-        AF.upload(multipartFormData: build,
+        HTTPKit.session.upload(multipartFormData: build,
                   to: target,
                   method: method,
                   headers: headers)
@@ -52,7 +52,6 @@ extension MultipartFormUploader {
                 case .success(let base):
                     done(base.result)
                 case .failure(let error):
-                    // TODO: 转换Error类型
                     done(.failure(error))
                 }
         }

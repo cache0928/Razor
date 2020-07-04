@@ -10,7 +10,7 @@ import Alamofire
 
 public protocol HTTPResponse: Decodable {
     associatedtype Payload: Decodable
-    var result: Result<Payload, Error> { get }
+    var result: Result<Payload, AFError> { get }
 }
 
 extension HTTPResponse where Payload == Empty {

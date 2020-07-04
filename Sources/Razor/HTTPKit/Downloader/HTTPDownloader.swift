@@ -21,7 +21,7 @@ public protocol HTTPDownloader: HTTPNetwork {
     ///
     ///
     var destination: DownloadRequest.Destination { get }
-    func download(request: Request, in queue: DispatchQueue, when: ((Progress) -> ())?, done: @escaping (Result<URL, Error>) ->())
+    func download(request: Request, in queue: DispatchQueue, when: ((Progress) -> ())?, done: @escaping (Result<URL, HTTPError>) ->())
 }
 
 extension HTTPDownloader {
