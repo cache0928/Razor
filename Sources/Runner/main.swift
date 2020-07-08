@@ -1,9 +1,8 @@
 import Razor
 import Foundation
-import Alamofire
 
 struct Resp<T: Decodable>: HTTPResponse, Decodable {
-    var result: Result<T, Error> {
+    var result: Result<T, HTTPError> {
         return .success(data)
     }
     
@@ -36,6 +35,14 @@ struct Goods: Decodable {
     let type: Int?
 }
 
+struct HostGet: StringLoader {
+    typealias Request = EmptyRequest
+    
+    let path: String = "https://10.0.10.10"
+    let method: HTTPMethod = .get
+    var headers: HTTPHeaders = .default
+}
+
 struct GoodsList: DecodableLoader {
     typealias Response = Resp<ListResult<Goods>>
     typealias Request  = EmptyRequest
@@ -46,12 +53,7 @@ struct GoodsList: DecodableLoader {
     let decoder: DataDecoder = JSONDecoder().rz.customize(dateFormat: "yyyy-MM-dd HH:mm:ss")
 }
 
-let q = DispatchQueue(label: "xzcdsfjhjsdjfka")
-GoodsList().load(in: q) { (result) in
-//    print(result)
-}
-
-struct ImageDownloader: StoredDownloader {    
+struct ImageDownloader: StoredDownloader {
     typealias Request = EmptyRequest
     
     let path: String = "https://httpbin.org/image/png"
@@ -67,13 +69,19 @@ struct ImageUploader: MultipartFormUploader {
     var path: String = "/index/upload/saveImage"
 }
 
-//ImageDownloader().download(in: q) { (result) in
-//    print(result)
-//}
+let q = DispatchQueue(label: "xzcdsfjhjsdjfka")
 
-let data = try! Data(contentsOf: URL(string: "file:///Users/cache/Documents/png.png")!)
-ImageUploader(entries: [MultipartFormEnty(name: "file", data: data, fileName: "zxczxcxzczxc")]).upload(in: q) { (result) in
+GoodsList().load(in: q) { (result) in
     print(result)
+}
+
+HostGet().load(in: q) { result in print(result) }
+
+ImageDownloader().download(in: q) { (result) in
+    if case let .success(url) = result {
+        let data = try! Data(contentsOf: url)
+        ImageUploader(entries: [MultipartFormEnty(name: "file", data: data, fileName: "fileName")]).upload(in: q) { (result) in print(result) }
+    }
 }
 
 sleep(10)
