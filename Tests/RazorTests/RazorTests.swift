@@ -6,7 +6,7 @@ final class RazorTests: XCTestCase {
         // This is an example of a functional test case.
         // Use XCTAssert and related functions to verify your tests produce the correct
         // results.
-        XCTAssertEqual(Razor().text, "Hello, World!")
+        XCTAssertEqual("1.1.1".rz.versionNewer(than: "1.0"), true)
     }
 
     static var allTests = [
