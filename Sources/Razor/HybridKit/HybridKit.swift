@@ -21,7 +21,7 @@ public enum UserAgent {
 open class HybridKit {
     public let webView: WKWebView!
     private let resource: WebResource
-    private let manager = NetworkReachabilityManager(host: "https://imcc.dev")!
+    private let manager = NetworkReachabilityManager(host: "https://www.apple.com.cn")!
     
     required public init(handlers: [WebMessageHandler],
                   resource: WebResource,
