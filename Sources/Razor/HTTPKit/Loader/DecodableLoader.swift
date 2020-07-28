@@ -29,12 +29,40 @@ extension DecodableLoader {
         } else {
             target = HTTPKit.serverAddress + path
         }
-        HTTPKit.session.request(target,
-                   method: method,
-                   parameters: request.parameters,
-                   encoder: request.encoder,
-                   headers: headers)
-            .responseDecodable(of: Response.self, queue: queue, decoder: decoder) { response in
+        let dataReq: DataRequest
+        switch authentication {
+        case .basic(let username, let password, let persistence):
+            dataReq = HTTPKit.session.request(target,
+                                              method: method,
+                                              parameters: request.parameters,
+                                              encoder: request.encoder,
+                                              headers: headers).authenticate(username: username, password: password, persistence: persistence)
+        case .header(let header):
+            var authHeaders = headers
+            authHeaders.add(header)
+            dataReq = HTTPKit.session.request(target,
+                                              method: method,
+                                              parameters: request.parameters,
+                                              encoder: request.encoder,
+                                              headers: authHeaders)
+        case .clientCertificate(let fileURL, let password):
+            guard let credential = TrustTool.getP12Credential(location: fileURL, password: password) else {
+                fallthrough
+            }
+            dataReq = HTTPKit.session.request(target,
+                                              method: method,
+                                              parameters: request.parameters,
+                                              encoder: request.encoder,
+                                              headers: headers).authenticate(with: credential)
+        default:
+            dataReq = HTTPKit.session.request(target,
+                                              method: method,
+                                              parameters: request.parameters,
+                                              encoder: request.encoder,
+                                              headers: headers)
+        }
+
+        dataReq.responseDecodable(of: Response.self, queue: queue, decoder: decoder) { response in
             switch response.result {
             case .success(let base):
                 callback(base.result)

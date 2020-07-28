@@ -12,9 +12,23 @@ import Foundation
 public protocol HTTPNetwork {
     associatedtype Request: HTTPRequest
 
+    var authentication: HTTPAuthentication { get }
     var headers: HTTPHeaders { get }
     var method: HTTPMethod { get }
     var path: String { get }
+}
+
+public enum HTTPAuthentication {
+    case none
+    case basic(username: String, password: String, persistence: URLCredential.Persistence = .forSession)
+    case header(_ header: HTTPHeader)
+    case clientCertificate(p12File: URL, password: String? = nil)
+}
+
+extension HTTPNetwork {
+    public var authentication: HTTPAuthentication {
+        return .none
+    }
 }
 
 public struct Empty: Codable {

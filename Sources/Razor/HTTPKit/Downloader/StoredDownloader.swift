@@ -30,23 +30,52 @@ extension StoredDownloader {
         } else {
             target = HTTPKit.serverAddress + path
         }
-        return HTTPKit.session.download(target,
-                                        method: method,
-                                        parameters: request.parameters,
-                                        encoder: request.encoder,
-                                        headers: headers,
-                                        to: destination)
-            .downloadProgress(queue: queue) { progress in when?(progress) }
-            .response(queue: queue) { response in
-                guard case let Result.success(url) = response.result,
-                    let fileURL = url else {
-                        guard let error = response.error else {
-                            return
-                        }
-                        done(.failure(error))
+        let dataReq: DownloadRequest
+        switch authentication {
+        case .basic(let username, let password, let persistence):
+            dataReq = HTTPKit.session.download(target,
+                                               method: method,
+                                               parameters: request.parameters,
+                                               encoder: request.encoder,
+                                               headers: headers,
+                                               to: destination).authenticate(username: username, password: password, persistence: persistence)
+        case .header(let header):
+            var authHeaders = headers
+            authHeaders.add(header)
+            dataReq = HTTPKit.session.download(target,
+                                               method: method,
+                                               parameters: request.parameters,
+                                               encoder: request.encoder,
+                                               headers: authHeaders,
+                                               to: destination)
+        case .clientCertificate(let fileURL, let password):
+            guard let credential = TrustTool.getP12Credential(location: fileURL, password: password) else {
+                fallthrough
+            }
+            dataReq = HTTPKit.session.download(target,
+                                               method: method,
+                                               parameters: request.parameters,
+                                               encoder: request.encoder,
+                                               headers: headers,
+                                               to: destination).authenticate(with: credential)
+        default:
+            dataReq = HTTPKit.session.download(target,
+                                               method: method,
+                                               parameters: request.parameters,
+                                               encoder: request.encoder,
+                                               headers: headers,
+                                               to: destination)
+        }
+        return dataReq.downloadProgress(queue: queue) { progress in when?(progress) }.response(queue: queue) { response in
+            guard case let Result.success(url) = response.result,
+                let fileURL = url else {
+                    guard let error = response.error else {
                         return
-                }
-                done(.success(fileURL))
+                    }
+                    done(.failure(error))
+                    return
+            }
+            done(.success(fileURL))
         }
     }
 }

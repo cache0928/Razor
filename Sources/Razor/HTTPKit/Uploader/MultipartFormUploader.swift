@@ -42,12 +42,35 @@ extension MultipartFormUploader {
         } else {
             target = HTTPKit.serverAddress + path
         }
-        HTTPKit.session.upload(multipartFormData: build,
-                  to: target,
-                  method: method,
-                  headers: headers)
-            .uploadProgress { (progress) in when?(progress) }
-            .responseDecodable(of: Response.self, queue: queue, decoder: decoder) { response in
+        let dataReq: UploadRequest
+        switch authentication {
+        case .basic(let username, let password, let persistence):
+            dataReq = HTTPKit.session.upload(multipartFormData: build,
+                                             to: target,
+                                             method: method,
+                                             headers: headers).authenticate(username: username, password: password, persistence: persistence)
+        case .header(let header):
+            var authHeaders = headers
+            authHeaders.add(header)
+            dataReq = HTTPKit.session.upload(multipartFormData: build,
+                                             to: target,
+                                             method: method,
+                                             headers: authHeaders)
+        case .clientCertificate(let fileURL, let password):
+            guard let credential = TrustTool.getP12Credential(location: fileURL, password: password) else {
+                fallthrough
+            }
+            dataReq = HTTPKit.session.upload(multipartFormData: build,
+                                             to: target,
+                                             method: method,
+                                             headers: headers).authenticate(with: credential)
+        default:
+            dataReq = HTTPKit.session.upload(multipartFormData: build,
+                                             to: target,
+                                             method: method,
+                                             headers: headers)
+        }
+        dataReq.uploadProgress { (progress) in when?(progress) }.responseDecodable(of: Response.self, queue: queue, decoder: decoder) { response in
                 switch response.result {
                 case .success(let base):
                     done(base.result)
