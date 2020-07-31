@@ -9,7 +9,6 @@ import Foundation
 
 fileprivate var _onceTracker: [String] = []
 
-
 extension DispatchQueue: RazorCompatible {}
 extension RazorWrapper where Base: DispatchQueue {
     public static func once(token: String, block: () -> Void) {
