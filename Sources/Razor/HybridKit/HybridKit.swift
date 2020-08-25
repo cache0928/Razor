@@ -86,11 +86,8 @@ open class HybridKit {
         manager.startListening { [unowned self] status in
             switch status {
             case .reachable(_):
-                if self.webView.url != nil {
-                    self.webView.reload()
-                } else {
-                    self.load()
-                }
+                self.manager.stopListening()
+                self.load()
             default:
                 break
             }
