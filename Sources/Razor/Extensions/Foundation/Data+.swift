@@ -6,10 +6,8 @@
 //
 
 import Foundation
-import CommonCrypto
-#if canImport(CryptoKit)
 import CryptoKit
-#endif
+
 
 public enum HMACAlgorithm {
     case md5
@@ -27,13 +25,7 @@ public enum EncryptAlgorithm {
 extension Data: RazorCompatibleValue {}
 extension RazorWrapper where Base == Data {
     public var md5Data: Base {
-        if #available(iOS 13.0, OSX 10.15, watchOS 6.0, tvOS 13.0, *) {
-            return Data(Insecure.MD5.hash(data: base))
-        } else {
-            var digest = [UInt8](repeating: 0, count:Int(CC_MD5_DIGEST_LENGTH))
-            let _ = base.withUnsafeBytes { CC_MD5($0.baseAddress, CC_LONG(base.count), &digest) }
-            return Data(digest)
-        }
+      return Data(Insecure.MD5.hash(data: base))
     }
     
     public var md5String: String {
@@ -43,13 +35,7 @@ extension RazorWrapper where Base == Data {
     }
     
     public var sha1Data: Base {
-        if #available(iOS 13.0, OSX 10.15, watchOS 6.0, tvOS 13.0, *) {
-            return Data(Insecure.SHA1.hash(data: base))
-        } else {
-            var digest = [UInt8](repeating: 0, count:Int(CC_SHA1_DIGEST_LENGTH))
-            let _ = base.withUnsafeBytes { CC_SHA1($0.baseAddress, CC_LONG(base.count), &digest) }
-            return Data(digest)
-        }
+      return Data(Insecure.SHA1.hash(data: base))
     }
     
     public var sha1String: String {
@@ -59,13 +45,7 @@ extension RazorWrapper where Base == Data {
     }
     
     public var sha256Data: Base {
-        if #available(iOS 13.0, OSX 10.15, watchOS 6.0, tvOS 13.0, *) {
-            return Data(SHA256.hash(data: base))
-        } else {
-            var digest = [UInt8](repeating: 0, count:Int(CC_SHA256_DIGEST_LENGTH))
-            let _ = base.withUnsafeBytes { CC_SHA256($0.baseAddress, CC_LONG(base.count), &digest) }
-            return Data(digest)
-        }
+      return Data(SHA256.hash(data: base))
     }
     
     public var sha256String: String {
@@ -75,13 +55,8 @@ extension RazorWrapper where Base == Data {
     }
     
     public var sha384Data: Base {
-        if #available(iOS 13.0, OSX 10.15, watchOS 6.0, tvOS 13.0, *) {
-            return Data(SHA384.hash(data: base))
-        } else {
-            var digest = [UInt8](repeating: 0, count:Int(CC_SHA384_DIGEST_LENGTH))
-            let _ = base.withUnsafeBytes { CC_SHA384($0.baseAddress, CC_LONG(base.count), &digest) }
-            return Data(digest)
-        }
+      return Data(SHA384.hash(data: base))
+
     }
     
     public var sha384String: String {
@@ -91,13 +66,7 @@ extension RazorWrapper where Base == Data {
     }
     
     public var sha512Data: Base {
-        if #available(iOS 13.0, OSX 10.15, watchOS 6.0, tvOS 13.0, *) {
-            return Data(SHA512.hash(data: base))
-        } else {
-            var digest = [UInt8](repeating: 0, count:Int(CC_SHA512_DIGEST_LENGTH))
-            let _ = base.withUnsafeBytes { CC_SHA512($0.baseAddress, CC_LONG(base.count), &digest) }
-            return Data(digest)
-        }
+      return Data(SHA512.hash(data: base))
     }
     
     public var sha512String: String {
@@ -107,54 +76,19 @@ extension RazorWrapper where Base == Data {
     }
     
     public func hmacData(key: Data, using algorithm: HMACAlgorithm) -> Base {
-        if #available(iOS 13.0, OSX 10.15, watchOS 6.0, tvOS 13.0, *) {
-            let key = SymmetricKey(data: key)
-            switch algorithm {
-            case .md5:
-                return Data(HMAC<Insecure.MD5>.authenticationCode(for: base, using: key))
-            case .sha1:
-                return Data(HMAC<Insecure.SHA1>.authenticationCode(for: base, using: key))
-            case .sha256:
-                return Data(HMAC<SHA256>.authenticationCode(for: base, using: key))
-            case .sha384:
-                return Data(HMAC<SHA384>.authenticationCode(for: base, using: key))
-            case .sha512:
-                return Data(HMAC<SHA512>.authenticationCode(for: base, using: key))
-            }
-        } else {
-            let size: Int32
-            let alg: CCHmacAlgorithm
-            switch algorithm {
-            case .md5:
-                alg = CCHmacAlgorithm(kCCHmacAlgMD5)
-                size = CC_MD5_DIGEST_LENGTH
-            case .sha1:
-                alg = CCHmacAlgorithm(kCCHmacAlgSHA1)
-                size = CC_SHA1_DIGEST_LENGTH
-            case .sha256:
-                alg = CCHmacAlgorithm(kCCHmacAlgSHA256)
-                size = CC_SHA256_DIGEST_LENGTH
-            case .sha384:
-                alg = CCHmacAlgorithm(kCCHmacAlgSHA384)
-                size = CC_SHA384_DIGEST_LENGTH
-            case .sha512:
-                alg = CCHmacAlgorithm(kCCHmacAlgSHA512)
-                size = CC_SHA512_DIGEST_LENGTH
-            }
-            var result = [UInt8](repeating: 0, count:Int(size))
-            let keySize = key.count
-            let keyPointer = UnsafeMutablePointer<UInt8>.allocate(capacity: keySize)
-            for (index, byte) in key.enumerated() {
-                keyPointer.advanced(by: index).pointee = byte
-            }
-            let dataSize = base.count
-            let dataPointer = UnsafeMutablePointer<UInt8>.allocate(capacity: dataSize)
-            for (index, byte) in base.enumerated() {
-                dataPointer.advanced(by: index).pointee = byte
-            }
-            CCHmac(alg, UnsafeRawPointer(keyPointer), keySize, UnsafeRawPointer(dataPointer), dataSize, &result)
-            return Data(result)
-        }
+      let key = SymmetricKey(data: key)
+      switch algorithm {
+      case .md5:
+          return Data(HMAC<Insecure.MD5>.authenticationCode(for: base, using: key))
+      case .sha1:
+          return Data(HMAC<Insecure.SHA1>.authenticationCode(for: base, using: key))
+      case .sha256:
+          return Data(HMAC<SHA256>.authenticationCode(for: base, using: key))
+      case .sha384:
+          return Data(HMAC<SHA384>.authenticationCode(for: base, using: key))
+      case .sha512:
+          return Data(HMAC<SHA512>.authenticationCode(for: base, using: key))
+      }
     }
     
     public func hmacString(key: Data, using algorithm: HMACAlgorithm) -> String {
@@ -180,7 +114,6 @@ extension RazorWrapper where Base == Data {
         }
     }
     
-    @available(iOS 13.0, OSX 10.15, watchOS 6.0, tvOS 13.0, *)
     public func decryptWith(key: Data, using algorithm: EncryptAlgorithm) -> Result<Data, Error> {
         let key = SymmetricKey(data: key)
         do {
